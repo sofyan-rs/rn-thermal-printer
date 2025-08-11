@@ -1,5 +1,5 @@
 {
-  "name": "rn-thermal-printer",
+  "name": "@sofyan-rs/rn-thermal-printer",
   "version": "0.1.0",
   "description": "Native bridge for thermal printer",
   "main": "./lib/module/index.js",
@@ -42,8 +42,17 @@
   },
   "keywords": [
     "react-native",
+    "thermal-printer",
+    "printer",
+    "bluetooth",
+    "usb",
+    "tcp",
+    "pos",
+    "receipt",
     "ios",
-    "android"
+    "android",
+    "native-bridge",
+    "turbo-module"
   ],
   "repository": {
     "type": "git",
