@@ -1,5 +1,5 @@
 {
-  "name": "@sofyan-rs/rn-thermal-printer",
+  "name": "@sofyan.rs/rn-thermal-printer",
   "version": "0.1.0",
   "description": "Native bridge for thermal printer",
   "main": "./lib/module/index.js",
