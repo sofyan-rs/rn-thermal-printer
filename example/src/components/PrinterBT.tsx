@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Text, View, StyleSheet, ScrollView } from 'react-native';
-import { printBluetooth } from 'rn-thermal-printer';
+import { printBluetooth } from '@sofyan.rs/rn-thermal-printer';
 import InputText from './ui/InputText';
 import ButtonSubmit from './ui/ButtonSubmit';
 import BooleanChoice from './ui/BooleanChoice';
+import ButtonClick from './ui/ButtonClick';
+import SearchBTDevices from './SearchBTDevices';
+import { requestBluetoothPermissions } from '../utils/printBTHelper';
+import { payload } from '../utils/payload';
 
 interface Props {
   setError: (error: string | null) => void;
@@ -16,21 +20,26 @@ export default function PrinterBT({
   setIsSuccess,
   scrollRef,
 }: Props) {
-  const [macAddress, setMacAddress] = useState('00:11:22:33:44:55');
+  const [macAddress, setMacAddress] = useState('');
   const [autoCut, setAutoCut] = useState(true);
   const [openCashbox, setOpenCashbox] = useState(false);
+  const [is58mm, setIs58mm] = useState(true);
 
-  const payload = `[C]<b>My Cafe</b>\n[L]Americano [R]25.000\n\n[C]-- Thanks --\n`;
+  const [showModal, setShowModal] = useState(false);
 
   const handlePrint = async () => {
     setIsSuccess(false);
     setError(null);
     try {
+      const hasPermissions = await requestBluetoothPermissions();
+      if (!hasPermissions) {
+        throw new Error('Bluetooth permissions not granted');
+      }
       await printBluetooth({
         macAddress,
         payload,
-        printerWidthMM: 80,
-        charsPerLine: 48,
+        printerWidthMM: is58mm ? 58 : 80,
+        charsPerLine: is58mm ? 32 : 48,
         autoCut,
         openCashbox,
         mmFeedPaper: 20,
@@ -52,13 +61,31 @@ export default function PrinterBT({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.h2}>Printer Bluetooth</Text>
+      <View style={styles.header}>
+        <Text style={styles.h2}>Printer Bluetooth</Text>
+        <ButtonClick
+          text="Connect Printer"
+          onPress={() => setShowModal(true)}
+        />
+      </View>
+      <SearchBTDevices
+        showModal={showModal}
+        setShowModal={setShowModal}
+        setMacAddress={setMacAddress}
+      />
       <InputText
         label="MAC Address"
         placeholder="MAC Address"
         value={macAddress}
         onChangeText={(text) => setMacAddress(text)}
         readonly
+      />
+      <BooleanChoice
+        label="58mm"
+        value={is58mm}
+        onChange={setIs58mm}
+        trueText="58mm"
+        falseText="80mm"
       />
       <BooleanChoice label="Auto Cut" value={autoCut} onChange={setAutoCut} />
       <BooleanChoice
@@ -83,5 +110,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });

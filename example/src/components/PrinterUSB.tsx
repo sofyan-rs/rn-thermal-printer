@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Text, View, StyleSheet, ScrollView } from 'react-native';
-import { printUsb } from 'rn-thermal-printer';
+import { printUsb } from '@sofyan.rs/rn-thermal-printer';
 import InputText from './ui/InputText';
 import ButtonSubmit from './ui/ButtonSubmit';
 import BooleanChoice from './ui/BooleanChoice';
+import ButtonClick from './ui/ButtonClick';
+import SearchUSBDevices from './SearchUSBDevices';
+import { payload } from '../utils/payload';
 
 interface Props {
   setError: (error: string | null) => void;
@@ -16,12 +19,13 @@ export default function PrinterUSB({
   setIsSuccess,
   scrollRef,
 }: Props) {
-  const [productId, setProductId] = useState('0x1234');
-  const [vendorId, setVendorId] = useState('0x5678');
+  const [productId, setProductId] = useState('');
+  const [vendorId, setVendorId] = useState('');
   const [autoCut, setAutoCut] = useState(true);
   const [openCashbox, setOpenCashbox] = useState(false);
+  const [is58mm, setIs58mm] = useState(true);
 
-  const payload = `[C]<b>My Cafe</b>\n[L]Americano [R]25.000\n\n[C]-- Thanks --\n`;
+  const [showModal, setShowModal] = useState(false);
 
   const handlePrint = async () => {
     setIsSuccess(false);
@@ -31,8 +35,8 @@ export default function PrinterUSB({
         productId: Number(productId),
         vendorId: Number(vendorId),
         payload,
-        printerWidthMM: 80,
-        charsPerLine: 48,
+        printerWidthMM: is58mm ? 58 : 80,
+        charsPerLine: is58mm ? 32 : 48,
         autoCut,
         openCashbox,
         mmFeedPaper: 20,
@@ -54,7 +58,19 @@ export default function PrinterUSB({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.h2}>Printer USB</Text>
+      <View style={styles.header}>
+        <Text style={styles.h2}>Printer USB</Text>
+        <ButtonClick
+          text="Connect Printer"
+          onPress={() => setShowModal(true)}
+        />
+      </View>
+      <SearchUSBDevices
+        showModal={showModal}
+        setShowModal={setShowModal}
+        setProductId={setProductId}
+        setVendorId={setVendorId}
+      />
       <InputText
         label="Product ID"
         placeholder="Product ID"
@@ -68,6 +84,13 @@ export default function PrinterUSB({
         value={vendorId}
         onChangeText={(text) => setVendorId(text)}
         readonly
+      />
+      <BooleanChoice
+        label="58mm"
+        value={is58mm}
+        onChange={setIs58mm}
+        trueText="58mm"
+        falseText="80mm"
       />
       <BooleanChoice label="Auto Cut" value={autoCut} onChange={setAutoCut} />
       <BooleanChoice
@@ -92,5 +115,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });

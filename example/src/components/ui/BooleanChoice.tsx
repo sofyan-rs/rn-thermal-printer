@@ -5,10 +5,14 @@ export default function BooleanChoice({
   label,
   value,
   onChange,
+  trueText = 'Yes',
+  falseText = 'No',
 }: {
   label: string;
   value: boolean;
   onChange: (value: boolean) => void;
+  trueText?: string;
+  falseText?: string;
 }) {
   return (
     <View style={styles.container}>
@@ -21,7 +25,7 @@ export default function BooleanChoice({
           <Text
             style={[styles.choiceText, value ? styles.choiceTextActive : null]}
           >
-            Yes
+            {trueText}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -31,7 +35,7 @@ export default function BooleanChoice({
           <Text
             style={[styles.choiceText, !value ? styles.choiceTextActive : null]}
           >
-            No
+            {falseText}
           </Text>
         </TouchableOpacity>
       </View>

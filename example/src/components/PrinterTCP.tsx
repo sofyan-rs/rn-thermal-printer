@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Text, View, StyleSheet, ScrollView } from 'react-native';
-import { printTcp } from 'rn-thermal-printer';
+import { printTcp } from '@sofyan.rs/rn-thermal-printer';
 import InputText from './ui/InputText';
 import ButtonSubmit from './ui/ButtonSubmit';
 import BooleanChoice from './ui/BooleanChoice';
+import { payload } from '../utils/payload';
 
 interface Props {
   setError: (error: string | null) => void;
@@ -16,12 +17,11 @@ export default function PrinterTCP({
   setIsSuccess,
   scrollRef,
 }: Props) {
-  const [ipAddress, setIpAddress] = useState('192.168.100.103');
+  const [ipAddress, setIpAddress] = useState('');
   const [port, setPort] = useState(9100);
   const [autoCut, setAutoCut] = useState(true);
   const [openCashbox, setOpenCashbox] = useState(false);
-
-  const payload = `[C]<b>My Cafe</b>\n[L]Americano [R]25.000\n\n[C]-- Thanks --\n`;
+  const [is58mm, setIs58mm] = useState(true);
 
   const handlePrint = async () => {
     setIsSuccess(false);
@@ -31,8 +31,8 @@ export default function PrinterTCP({
         ip: ipAddress,
         port,
         payload,
-        printerWidthMM: 80,
-        charsPerLine: 48,
+        printerWidthMM: is58mm ? 58 : 80,
+        charsPerLine: is58mm ? 32 : 48,
         autoCut,
         openCashbox,
         mmFeedPaper: 20,
@@ -68,12 +68,20 @@ export default function PrinterTCP({
         onChangeText={(text) => setPort(Number(text))}
         keyboardType="numeric"
       />
+      <BooleanChoice
+        label="58mm"
+        value={is58mm}
+        onChange={setIs58mm}
+        trueText="58mm"
+        falseText="80mm"
+      />
       <BooleanChoice label="Auto Cut" value={autoCut} onChange={setAutoCut} />
       <BooleanChoice
         label="Open Cashbox"
         value={openCashbox}
         onChange={setOpenCashbox}
       />
+
       <ButtonSubmit text="Print" onPress={handlePrint} />
     </View>
   );
