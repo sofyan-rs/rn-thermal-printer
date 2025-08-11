@@ -20,10 +20,6 @@ yarn add rn-thermal-printer
 
 ### Printer USB
 
-```js
-import { multiply } from 'rn-thermal-printer';
-```
-
 ## Contributing
 
 - [Development workflow](CONTRIBUTING.md#development-workflow)
