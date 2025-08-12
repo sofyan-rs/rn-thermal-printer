@@ -1,5 +1,7 @@
 # @sofyan.rs/rn-thermal-printer
 
+[![npm version](https://badge.fury.io/js/@sofyan.rs%2Frn-thermal-printer.svg?icon=si%3Anpm)](https://badge.fury.io/js/@sofyan.rs%2Frn-thermal-printer)
+
 Native bridge for thermal printer. Support Bluetooth, TCP, and USB printer.
 
 ### Android Only for Now
