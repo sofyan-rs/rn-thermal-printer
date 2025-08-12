@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Text, View, StyleSheet, ScrollView } from 'react-native';
+// @ts-ignore
 import { printBluetooth } from '@sofyan.rs/rn-thermal-printer';
 import InputText from './ui/InputText';
 import ButtonSubmit from './ui/ButtonSubmit';

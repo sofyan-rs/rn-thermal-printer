@@ -12,35 +12,29 @@ export type CommonPrintOptions = {
   codepage?: string; // e.g. 'CP437', 'CP1252'
   bold?: boolean;
   underline?: boolean;
-};
-
-export type TcpOptions = CommonPrintOptions & {
-  ip: string;
-  port: number; // default 9100
   printerWidthMM?: 58 | 80;
   charsPerLine?: number; // 32 for 58mm, 48 for 80mm
   payload: string; // plain text with markup (see README)
 };
 
+export type TcpOptions = CommonPrintOptions & {
+  ip: string;
+  port: number; // default 9100
+};
+
 export type BtOptions = CommonPrintOptions & {
-  macAddress: string; // Android only
-  payload: string;
-  printerWidthMM?: 58 | 80;
-  charsPerLine?: number;
+  macAddress: string;
 };
 
 export type UsbOptions = CommonPrintOptions & {
-  vendorId: number; // Android only
+  vendorId: number;
   productId: number;
-  payload: string;
-  printerWidthMM?: 58 | 80;
-  charsPerLine?: number;
 };
 
 export interface Spec extends TurboModule {
   printTcp(options: TcpOptions): Promise<void>;
-  printBluetooth(options: BtOptions): Promise<void>; // Android
-  printUsb(options: UsbOptions): Promise<void>; // Android
+  printBluetooth(options: BtOptions): Promise<void>;
+  printUsb(options: UsbOptions): Promise<void>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('RnThermalPrinter');

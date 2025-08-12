@@ -7,7 +7,7 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.interfaces.TurboModule
 
-// Generated spec (New Architecture). Adjust package if different.
+// Generated spec (New Architecture)
 import com.rnthermalprinter.NativeRnThermalPrinterSpec
 
 // Android
@@ -19,6 +19,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
+import android.graphics.BitmapFactory
 
 // DantSu (ESC/POS)
 import com.dantsu.escposprinter.EscPosPrinter
@@ -28,13 +29,15 @@ import com.dantsu.escposprinter.connection.tcp.TcpConnection
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection
 import com.dantsu.escposprinter.connection.usb.UsbConnection
 import com.dantsu.escposprinter.connection.usb.UsbPrintersConnections
+import com.dantsu.escposprinter.textparser.PrinterTextParserImg
 
 // Java
+import java.net.URL
 import java.util.concurrent.Executors
 
 @ReactModule(name = RnThermalPrinterModule.NAME)
 class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
-  NativeRnThermalPrinterSpec(reactContext), TurboModule {  // TurboModule optional but fine
+  NativeRnThermalPrinterSpec(reactContext), TurboModule {
 
   companion object { const val NAME = "RnThermalPrinter" }
   override fun getName() = NAME
@@ -62,6 +65,7 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
     o.getBoolean("underline", false),
     o.getString("codepage")?.let { toCharsetEncoding(it) }
   )
+
   private fun ReadableMap.getBoolean(k: String, def: Boolean) =
     if (hasKey(k) && !isNull(k)) getBoolean(k) else def
   private fun ReadableMap.getDouble(k: String, def: Double) =
@@ -82,11 +86,32 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
     return if (cp != null) EscPosPrinter(conn, dpi, w, cpl, cp) else EscPosPrinter(conn, dpi, w, cpl)
   }
 
+  private fun resolveRemoteImages(printer: EscPosPrinter, payload: String): String {
+    val regex = Regex("""<img>(.*?)</img>""", RegexOption.IGNORE_CASE)
+    return regex.replace(payload) { m ->
+      val src = m.groupValues[1].trim()
+      return@replace try {
+        if (src.startsWith("http://") || src.startsWith("https://")) {
+          URL(src).openStream().use { ins ->
+            val bmp = BitmapFactory.decodeStream(ins) ?: return@replace m.value
+            val hex = PrinterTextParserImg.bitmapToHexadecimalString(printer, bmp)
+            "<img>$hex</img>"
+          }
+        } else {
+          m.value // Let DantSu handle local path/content://
+        }
+      } catch (_: Exception) {
+        m.value
+      }
+    }
+  }
+
   private fun printWithOptions(printer: EscPosPrinter, text: String, f: Flags) {
+    val processed = resolveRemoteImages(printer, f.decorate(text))
     when {
-      f.openCashbox -> printer.printFormattedTextAndOpenCashBox(text, f.mmFeedPaper)
-      f.autoCut     -> printer.printFormattedTextAndCut(text, f.mmFeedPaper)
-      else          -> printer.printFormattedText(text, f.mmFeedPaper)
+      f.openCashbox -> printer.printFormattedTextAndOpenCashBox(processed, f.mmFeedPaper)
+      f.autoCut     -> printer.printFormattedTextAndCut(processed, f.mmFeedPaper)
+      else          -> printer.printFormattedText(processed, f.mmFeedPaper)
     }
   }
 
@@ -121,7 +146,7 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
         val connection = TcpConnection(ip, port, timeout)
         val printer = buildPrinter(connection, w, cpl, flags.codepage)
 
-        printWithOptions(printer, flags.decorate(payload), flags)
+        printWithOptions(printer, payload, flags)
         connection.disconnect()
         promise.resolve(null)
       } catch (e: Exception) {
@@ -144,7 +169,7 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
         val connection = BluetoothConnection(device)
 
         val printer = buildPrinter(connection, w, cpl, flags.codepage)
-        printWithOptions(printer, flags.decorate(payload), flags)
+        printWithOptions(printer, payload, flags)
         connection.disconnect()
         promise.resolve(null)
       } catch (e: SecurityException) {
@@ -185,7 +210,7 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
             } else {
               try {
                 val printer = buildPrinter(usbConnection, w, cpl, flags.codepage)
-                printWithOptions(printer, flags.decorate(payload), flags)
+                printWithOptions(printer, payload, flags)
                 usbConnection.disconnect()
                 promise.resolve(null)
               } catch (e: Exception) {
@@ -195,7 +220,7 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
           }
         } else {
           val printer = buildPrinter(usbConnection, w, cpl, flags.codepage)
-          printWithOptions(printer, flags.decorate(payload), flags)
+          printWithOptions(printer, payload, flags)
           usbConnection.disconnect()
           promise.resolve(null)
         }
