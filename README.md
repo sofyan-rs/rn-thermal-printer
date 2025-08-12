@@ -126,6 +126,8 @@ try {
 | printBluetooth | `BtOptions`  |
 | printBluetooth | `UsbOptions` |
 
+### Interface
+
 ```ts
 export type CommonPrintOptions = {
   timeout?: number; // ms
