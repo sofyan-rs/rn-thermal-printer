@@ -181,7 +181,7 @@ export type UsbOptions = CommonPrintOptions & {
 
 ## Payload / Formatted text : syntax guide
 
-Same as https://github.com/DantSu/ESCPOS-ThermalPrinter-Android?tab=readme-ov-file#formatted-text--syntax-guide except for the <img></img> tag
+Same as https://github.com/DantSu/ESCPOS-ThermalPrinter-Android?tab=readme-ov-file#formatted-text--syntax-guide except for the `<img></img>` tag
 
 ### New line
 
