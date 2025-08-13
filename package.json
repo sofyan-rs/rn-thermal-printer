@@ -1,6 +1,6 @@
 {
   "name": "@sofyan.rs/rn-thermal-printer",
-  "version": "1.0.2",
+  "version": "1.0.1",
   "description": "Native bridge for thermal printer",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",

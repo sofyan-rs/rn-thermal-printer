@@ -1,12 +1,10 @@
 # @sofyan.rs/rn-thermal-printer
 
-[![npm version](https://badge.fury.io/js/@sofyan.rs%2Frn-thermal-printer.svg?icon=si%3Anpm)](https://badge.fury.io/js/@sofyan.rs%2Frn-thermal-printer)
-
-Native bridge for thermal printer. Support Bluetooth, TCP, and USB printer.
+Native bridge for thermal printer. Support Bluetooth, TCP, and USB printer with New Arch & Turbo Module.
 
 ### Android Only for Now
 
-Native library: https://github.com/DantSu/ESCPOS-ThermalPrinter-Android/tree/3.0.1
+Native library for Android : https://github.com/DantSu/ESCPOS-ThermalPrinter-Android/tree/3.0.1
 
 ## Installation
 
