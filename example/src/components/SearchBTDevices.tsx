@@ -6,10 +6,20 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 import { requestBluetoothPermissions } from '../utils/printBTHelper';
-import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import { useEffect, useState } from 'react';
+
+// Conditionally import RNBluetoothClassic only on Android
+let RNBluetoothClassic: any = null;
+if (Platform.OS === 'android') {
+  try {
+    RNBluetoothClassic = require('react-native-bluetooth-classic').default;
+  } catch (error) {
+    console.warn('react-native-bluetooth-classic not available:', error);
+  }
+}
 
 export interface BTDevice {
   macAddress: string;
