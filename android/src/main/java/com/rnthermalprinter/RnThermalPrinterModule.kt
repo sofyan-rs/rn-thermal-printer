@@ -20,6 +20,7 @@ import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 
 // DantSu (ESC/POS)
 import com.dantsu.escposprinter.EscPosPrinter
@@ -32,7 +33,6 @@ import com.dantsu.escposprinter.connection.usb.UsbPrintersConnections
 import com.dantsu.escposprinter.textparser.PrinterTextParserImg
 
 // Java
-import java.io.ByteArrayOutputStream
 import java.net.URL
 import java.util.concurrent.Executors
 
@@ -49,7 +49,14 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
   private data class Flags(
     val autoCut: Boolean, val openCashbox: Boolean, val mmFeedPaper: Float,
     val bold: Boolean, val underline: Boolean, val codepage: EscPosCharsetEncoding?
-  )
+  ) {
+    fun decorate(s: String): String {
+      var t = s
+      if (bold) t = "[B]$t[/B]"
+      if (underline) t = "[U]$t[/U]"
+      return t
+    }
+  }
 
   private fun readFlags(o: ReadableMap) = Flags(
     o.getBoolean("autoCut", false),
@@ -80,91 +87,35 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
     return if (cp != null) EscPosPrinter(conn, dpi, w, cpl, cp) else EscPosPrinter(conn, dpi, w, cpl)
   }
 
-  // --- Sanitize / styling so [C]/[L]/[R] stays first
-  private fun sanitizeLeading(text: String): String {
-    var s = text.replace("\uFEFF", "").replace("\r\n", "\n").replace("\r", "\n")
-    s = s.replaceFirst(Regex("^[ \\t\\u0000-\\u001F]+"), "")
-    return s
-  }
-
-  private val alignAtStart = Regex("""^\s*(\[(?:L|C|R)\])?(.*)$""", RegexOption.IGNORE_CASE)
-
-  private fun applyStylesPreservingAlign(text: String, bold: Boolean, underline: Boolean): String =
-    text.split('\n').joinToString("\n") { line ->
-      val m = alignAtStart.find(line) ?: return@joinToString line
-      val align = m.groupValues[1].uppercase()
-      var rest  = m.groupValues[2]
-      if (bold)      rest = "<b>$rest</b>"
-      if (underline) rest = "<u>$rest</u>"
-      "$align$rest"
-    }
-
-  // --- Normalize QR/BARCODE sizes to avoid huge payloads that can stall BT
-  private fun normalizeQrBarcode(payload: String): String {
-    var out = payload
-
-    // Add default size to <qrcode> if missing; clamp size 4..10
-    out = Regex("""<qrcode(.*?)>""", RegexOption.IGNORE_CASE).replace(out) { m ->
-      val attrs = m.groupValues[1]
-      val sizeMatch = Regex("""\bsize\s*=\s*['"]?(\d+)['"]?""", RegexOption.IGNORE_CASE).find(attrs)
-      if (sizeMatch == null) {
-        "<qrcode size='8'>"
-      } else {
-        val sz = sizeMatch.groupValues[1].toIntOrNull() ?: 8
-        val clamped = sz.coerceIn(4, 10)
-        "<qrcode${attrs.replace(sizeMatch.value, " size='$clamped'")}>"
-      }
-    }
-
-    // Default barcode height; clamp 6..24 (DantSu uses 'height' in text rows)
-    out = Regex("""<barcode(.*?)>""", RegexOption.IGNORE_CASE).replace(out) { m ->
-      val attrs = m.groupValues[1]
-      val hMatch = Regex("""\bheight\s*=\s*['"]?(\d+)['"]?""", RegexOption.IGNORE_CASE).find(attrs)
-      val newAttrs = if (hMatch == null) {
-        "${attrs} height='12'"
-      } else {
-        val hv = hMatch.groupValues[1].toIntOrNull() ?: 12
-        attrs.replace(hMatch.value, " height='${hv.coerceIn(6, 24)}'")
-      }
-      "<barcode${newAttrs}>"
-    }
-
-    return out
-  }
-
-  // --- Remote <img> with timeouts & safe buffering (prevents hangs)
-  private fun fetchImageBytesWithTimeout(urlStr: String, connectMs: Int = 4000, readMs: Int = 6000, maxBytes: Int = 1_500_000): ByteArray? {
-    val url = URL(urlStr)
-    val conn = url.openConnection()
-    conn.connectTimeout = connectMs
-    conn.readTimeout = readMs
-    conn.getInputStream().use { ins ->
-      val buf = ByteArray(16 * 1024)
-      val out = ByteArrayOutputStream()
-      var total = 0
-      while (true) {
-        val n = ins.read(buf)
-        if (n <= 0) break
-        total += n
-        if (total > maxBytes) break // cap to avoid huge images
-        out.write(buf, 0, n)
-      }
-      return out.toByteArray()
-    }
-  }
-
   private fun resolveRemoteImages(printer: EscPosPrinter, payload: String): String {
-    val regex = Regex("""<img>(.*?)</img>""", RegexOption.IGNORE_CASE)
+    val regex = Regex("""<img(?:\s+width=["'](\d+)["'])?(?:\s+height=["'](\d+)["'])?\s*>(.*?)</img>""", RegexOption.IGNORE_CASE)
     return regex.replace(payload) { m ->
-      val src = m.groupValues[1].trim()
+      val widthStr = m.groupValues[1]
+      val heightStr = m.groupValues[2]
+      val src = m.groupValues[3].trim()
+
+      val targetWidth = if (widthStr.isNotEmpty()) widthStr.toIntOrNull() else null
+      val targetHeight = if (heightStr.isNotEmpty()) heightStr.toIntOrNull() else null
+
       return@replace try {
         if (src.startsWith("http://") || src.startsWith("https://")) {
-          val bytes = fetchImageBytesWithTimeout(src) ?: return@replace m.value
-          val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@replace m.value
-          val hex = PrinterTextParserImg.bitmapToHexadecimalString(printer, bmp)
-          "<img>$hex</img>"
+          URL(src).openStream().use { ins ->
+            var bmp = BitmapFactory.decodeStream(ins) ?: return@replace m.value
+
+            // Resize bitmap if dimensions are specified
+            bmp = resizeBitmapIfNeeded(bmp, targetWidth, targetHeight)
+
+            val hex = PrinterTextParserImg.bitmapToHexadecimalString(printer, bmp)
+            "<img>$hex</img>"
+          }
         } else {
-          m.value // local path/content:// → let DantSu handle
+          // For local images, we need to handle resizing differently
+          if (targetWidth != null || targetHeight != null) {
+            // Create a modified img tag that DantSu can process, then resize the result
+            processLocalImageWithSize(printer, src, targetWidth, targetHeight)
+          } else {
+            m.value // Let DantSu handle local path/content://
+          }
         }
       } catch (_: Exception) {
         m.value
@@ -172,12 +123,60 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  private fun printWithOptions(printer: EscPosPrinter, text: String, f: Flags) {
-    val sanitized = sanitizeLeading(text)
-    val styled    = applyStylesPreservingAlign(sanitized, f.bold, f.underline)
-    val normalized= normalizeQrBarcode(styled)
-    val processed = resolveRemoteImages(printer, normalized)
+  private fun resizeBitmapIfNeeded(originalBitmap: Bitmap, targetWidth: Int?, targetHeight: Int?): Bitmap {
+    if (targetWidth == null && targetHeight == null) {
+      return originalBitmap
+    }
 
+    val originalWidth = originalBitmap.width
+    val originalHeight = originalBitmap.height
+
+    // Calculate new dimensions while maintaining aspect ratio
+    val (newWidth, newHeight) = when {
+      targetWidth != null && targetHeight != null -> {
+        // Both dimensions specified - use them directly
+        targetWidth to targetHeight
+      }
+      targetWidth != null -> {
+        // Only width specified - calculate height maintaining aspect ratio
+        val aspectRatio = originalHeight.toFloat() / originalWidth.toFloat()
+        targetWidth to (targetWidth * aspectRatio).toInt()
+      }
+      targetHeight != null -> {
+        // Only height specified - calculate width maintaining aspect ratio
+        val aspectRatio = originalWidth.toFloat() / originalHeight.toFloat()
+        (targetHeight * aspectRatio).toInt() to targetHeight
+      }
+      else -> originalWidth to originalHeight
+    }
+
+    return Bitmap.createScaledBitmap(originalBitmap, newWidth, newHeight, true)
+  }
+
+  private fun processLocalImageWithSize(printer: EscPosPrinter, src: String, targetWidth: Int?, targetHeight: Int?): String {
+    return try {
+      // For local files, we'll need to load and resize them manually
+      // This is a simplified approach - you might need to handle content:// URIs differently
+      val bitmap = if (src.startsWith("content://")) {
+        // Handle content URI
+        val uri = android.net.Uri.parse(src)
+        val inputStream = reactApplicationContext.contentResolver.openInputStream(uri)
+        BitmapFactory.decodeStream(inputStream)
+      } else {
+        // Handle file path
+        BitmapFactory.decodeFile(src)
+      } ?: return "<img>$src</img>" // Fallback to original if can't decode
+
+      val resizedBitmap = resizeBitmapIfNeeded(bitmap, targetWidth, targetHeight)
+      val hex = PrinterTextParserImg.bitmapToHexadecimalString(printer, resizedBitmap)
+      "<img>$hex</img>"
+    } catch (e: Exception) {
+      "<img>$src</img>" // Fallback to original on error
+    }
+  }
+
+  private fun printWithOptions(printer: EscPosPrinter, text: String, f: Flags) {
+    val processed = resolveRemoteImages(printer, f.decorate(text))
     when {
       f.openCashbox -> printer.printFormattedTextAndOpenCashBox(processed, f.mmFeedPaper)
       f.autoCut     -> printer.printFormattedTextAndCut(processed, f.mmFeedPaper)
@@ -209,18 +208,13 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
         val ip = reqString(options, "ip")
         val port = if (options.hasKey("port") && !options.isNull("port")) options.getInt("port") else 9100
         val timeout = if (options.hasKey("timeout") && !options.isNull("timeout")) options.getInt("timeout") else 3000
-        var payload = reqString(options, "payload")
+        val payload = reqString(options, "payload")
         val (w, cpl) = resolvePaper(options)
         val flags = readFlags(options)
 
         val connection = TcpConnection(ip, port, timeout)
-        connection.write(byteArrayOf(0x1B, 0x40)) // ESC @
-        connection.write(byteArrayOf(0x1B, 0x61, 0x00)) // ESC a 0
-        connection.write(byteArrayOf(0x0A)) // LF
-        try { Thread.sleep(30) } catch (_: InterruptedException) {}
-        if (!payload.startsWith("\n")) payload = "\n$payload"
-
         val printer = buildPrinter(connection, w, cpl, flags.codepage)
+
         printWithOptions(printer, payload, flags)
         connection.disconnect()
         promise.resolve(null)
@@ -244,7 +238,7 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
         val connection = BluetoothConnection(device)
 
         val printer = buildPrinter(connection, w, cpl, flags.codepage)
-        printWithOptions(printer, payload, flags)  // now with URL timeouts + QR/barcode caps
+        printWithOptions(printer, payload, flags)
         connection.disconnect()
         promise.resolve(null)
       } catch (e: SecurityException) {
@@ -278,27 +272,26 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
         }
 
         val device = usbConnection.device
-        val doPrint: () -> Unit = {
-          try {
-            val printer = buildPrinter(usbConnection, w, cpl, flags.codepage)
-            printWithOptions(printer, payload, flags)
-            usbConnection.disconnect()
-            promise.resolve(null)
-          } catch (e: Exception) {
-            promise.reject("USB_PRINT_ERROR", e)
-          }
-        }
-
         if (!usbManager.hasPermission(device)) {
           requestUsbPermission(usbManager, device) { granted, err ->
             if (!granted) {
               promise.reject("USB_PERMISSION", err ?: Exception("USB permission denied"))
             } else {
-              doPrint()
+              try {
+                val printer = buildPrinter(usbConnection, w, cpl, flags.codepage)
+                printWithOptions(printer, payload, flags)
+                usbConnection.disconnect()
+                promise.resolve(null)
+              } catch (e: Exception) {
+                promise.reject("USB_PRINT_ERROR", e)
+              }
             }
           }
         } else {
-          doPrint()
+          val printer = buildPrinter(usbConnection, w, cpl, flags.codepage)
+          printWithOptions(printer, payload, flags)
+          usbConnection.disconnect()
+          promise.resolve(null)
         }
       } catch (e: Exception) {
         promise.reject("USB_PRINT_ERROR", e)

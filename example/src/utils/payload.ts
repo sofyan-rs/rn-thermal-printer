@@ -1,26 +1,17 @@
 export const payload =
   '[L]\n' +
-  "[C]<u><font size='big'>ORDER N°045</font></u>\n" +
+  '[C]<img width="150">https://api.tantri.id/cafe/asset/kurosuke-cafe/1755487454058-438136116.png</img>\n' +
+  "[C]<font size='tall'><b>Kurosuke Cafe</b></font>\n" +
+  '[C]18-8-2025 09:12\n' +
+  '[L]================================================\n' +
+  '[L]Order ID   :[R]TRI-CWVMEV7TOUW5\n' +
+  '[L]No. Order  :[R]9\n' +
+  '[L]------------------------------------------------\n' +
+  "[C]<font size='tall'><b>SCAN HERE FOR ADD ORDER</b></font>\n" +
   '[L]\n' +
-  '[C]================================\n' +
+  "[C]<qrcode size='34'>https://menu.tantri.id/kurosuke-cafe/receipt/TRI-CWVMEV7TOUW5</qrcode>\n" +
   '[L]\n' +
-  '[L]<b>BEAUTIFUL SHIRT</b>[R]9.99e\n' +
-  '[L]  + Size : S\n' +
-  '[L]\n' +
-  '[L]<b>AWESOME HAT</b>[R]24.99e\n' +
-  '[L]  + Size : 57/58\n' +
-  '[L]\n' +
-  '[C]--------------------------------\n' +
-  '[R]TOTAL PRICE :[R]34.98e\n' +
-  '[R]TAX :[R]4.23e\n' +
-  '[L]\n' +
-  '[C]================================\n' +
-  '[L]\n' +
-  "[L]<font size='tall'>Customer :</font>\n" +
-  '[L]Raymond DUPONT\n' +
-  '[L]5 rue des girafes\n' +
-  '[L]31547 PERPETES\n' +
-  '[L]Tel : +33801201456\n' +
-  '[L]\n' +
-  "[C]<barcode type='ean13' height='10'>831254784551</barcode>\n" +
-  "[C]<qrcode size='20'>https://dantsu.com/</qrcode>";
+  '[L]================================================\n' +
+  '[C]Powered by Tantri.id\n' +
+  '[L]------------------------------------------------\n' +
+  '[L]\n\n';

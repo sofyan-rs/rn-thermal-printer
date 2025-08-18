@@ -243,7 +243,10 @@ Example :
 
 `<img></img>` tag allows you to print image. Inside the tag you need to insert an image url.
 
-- `<img>`img url`</img>`
+- `<img>`img url`</img>` : Print image with original size
+- `<img width='200'>`img url`</img>` : Print image with width of 200 pixels (height auto-calculated)
+- `<img height='150'>`img url`</img>` : Print image with height of 150 pixels (width auto-calculated)
+- `<img width='200' height='150'>`img url`</img>` : Print image with specific width and height
 
 **⚠ WARNING ⚠** : This tag has several constraints :
 
@@ -251,57 +254,9 @@ Example :
 - `<img>` must be directly preceded by nothing or an alignment tag (`[L][C][R]`).
 - `</img>` must be directly followed by a new line `\n`.
 - Maximum height of printed image is 256px, If you want to print larger bitmap. Please refer to this solution: [#70](https://github.com/DantSu/ESCPOS-ThermalPrinter-Android/issues/70#issuecomment-714390014)
+- When both width and height are specified, the image may be distorted if the aspect ratio doesn't match the original
+- When only width or height is specified, the other dimension is calculated to maintain aspect ratio
 
 ### Barcode
 
-`<barcode></barcode>` tag allows you to print a barcode. Inside the tag you need to write the code number to print.
-
-- `<barcode>451278452159</barcode>` : **(12 numbers)**
-  Prints a EAN13 barcode (height: 10mm, width: ~70% printer width, text: displayed below).
-- `<barcode type='ean8'>4512784</barcode>` : **(7 numbers)**
-  Prints a EAN8 barcode (height: 10mm, width: ~70% printer width, text: displayed below).
-- `<barcode type='upca' height='20'>4512784521</barcode>` : **(11 numbers)**
-  Prints a UPC-A barcode (height: 20mm, width: ~70% printer width, text: displayed below).
-- `<barcode type='upce' height='25' width='50' text='none'>512789</barcode>` : **(6 numbers)**
-  Prints a UPC-E barcode (height: 25mm, width: ~50mm, text: hidden).
-- `<barcode type='128' width='40' text='above'>DantSu</barcode>` : **(string)**
-  Prints a barcode 128 (height: 10mm, width: ~40mm, text: displayed above).
-
-**⚠ WARNING ⚠** : This tag has several constraints :
-
-- A line that contains `<barcode></barcode>` can have only one alignment tag and it must be at the beginning of the line.
-- `<barcode>` must be directly preceded by nothing or an alignment tag (`[L][C][R]`).
-- `</barcode>` must be directly followed by a new line `\n`.
-- You can't write text on a line that contains `<barcode></barcode>`.
-
-### QR Code
-
-`<qrcode></qrcode>` tag allows you to print a QR code. Inside the tag you need to write the QR code data.
-
-- `<qrcode>https://dantsu.com/</qrcode>` :
-  Prints a QR code with a width and height of 20 millimeters.
-- `<qrcode size='25'>123456789</qrcode>` :
-  Prints a QR code with a width and height of 25 millimeters.
-
-**⚠ WARNING ⚠** : This tag has several constraints :
-
-- A line that contains `<qrcode></qrcode>` can have only one alignment tag and it must be at the beginning of the line.
-- `<qrcode>` must be directly preceded by nothing or an alignment tag (`[L][C][R]`).
-- `</qrcode>` must be directly followed by a new line `\n`.
-- You can't write text on a line that contains `<qrcode></qrcode>`.
-
-place the image url directly between the img tags
-
-## Contributing
-
-- [Development workflow](CONTRIBUTING.md#development-workflow)
-- [Sending a pull request](CONTRIBUTING.md#sending-a-pull-request)
-- [Code of conduct](CODE_OF_CONDUCT.md)
-
-## License
-
-MIT
-
----
-
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
+`<barcode></barcode>`

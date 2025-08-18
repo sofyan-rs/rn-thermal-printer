@@ -32,7 +32,7 @@ export default function PrinterTCP({
         ip: ipAddress,
         port,
         payload,
-        printerWidthMM: is58mm ? 64 : 46,
+        printerWidthMM: is58mm ? 46 : 70,
         charsPerLine: is58mm ? 32 : 48,
         autoCut,
         openCashbox,
