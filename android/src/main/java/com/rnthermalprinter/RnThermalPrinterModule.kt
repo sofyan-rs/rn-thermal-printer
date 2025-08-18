@@ -49,12 +49,7 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
     val autoCut: Boolean, val openCashbox: Boolean, val mmFeedPaper: Float,
     val bold: Boolean, val underline: Boolean, val codepage: EscPosCharsetEncoding?
   ) {
-    fun decorate(s: String): String {
-      var t = s
-      if (bold) t = "[B]$t[/B]"
-      if (underline) t = "[U]$t[/U]"
-      return t
-    }
+    fun decorate(s: String) = s
   }
 
   private fun readFlags(o: ReadableMap) = Flags(
@@ -107,7 +102,13 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
   }
 
   private fun printWithOptions(printer: EscPosPrinter, text: String, f: Flags) {
-    val processed = resolveRemoteImages(printer, f.decorate(text))
+    // 1) keep [L/C/R] at start, then apply styles
+    val styled    = applyStylesPreservingAlign(text, f.bold, f.underline)
+    // 2) (optional) auto-center visuals if you want — or skip if you always put [C] yourself
+    // val centered  = ensureCenteredVisuals(styled)
+    // 3) resolve remote <img> URLs to hex for DantSu
+    val processed = resolveRemoteImages(printer, styled)
+
     when {
       f.openCashbox -> printer.printFormattedTextAndOpenCashBox(processed, f.mmFeedPaper)
       f.autoCut     -> printer.printFormattedTextAndCut(processed, f.mmFeedPaper)
@@ -130,6 +131,20 @@ class RnThermalPrinterModule(reactContext: ReactApplicationContext) :
     "CP1252"         -> EscPosCharsetEncoding("windows-1252", 16)
     "CP1254"         -> EscPosCharsetEncoding("windows-1254", 46)
     else -> null
+  }
+
+  private val alignAtStart = Regex("""^\s*(\[(?:L|C|R)\])?(.*)$""", RegexOption.IGNORE_CASE)
+
+  /** Keep [L]/[C]/[R] at line-start, then apply <b>/<u> styling to the rest so alignment still works. */
+  private fun applyStylesPreservingAlign(text: String, bold: Boolean, underline: Boolean): String =
+  text.split('\n').joinToString("\n") { line ->
+    val m = alignAtStart.find(line)
+    if (m == null) return@joinToString line
+    val align = m.groupValues[1]  // may be ""
+    var rest  = m.groupValues[2]
+    if (bold)      rest = "<b>$rest</b>"
+    if (underline) rest = "<u>$rest</u>"
+    "$align$rest"
   }
 
   // ------- TCP -------
