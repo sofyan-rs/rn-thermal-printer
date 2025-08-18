@@ -32,11 +32,11 @@ export default function PrinterTCP({
         ip: ipAddress,
         port,
         payload,
-        printerWidthMM: is58mm ? 58 : 80,
+        printerWidthMM: is58mm ? 64 : 46,
         charsPerLine: is58mm ? 32 : 48,
         autoCut,
         openCashbox,
-        mmFeedPaper: 20,
+        mmFeedPaper: 40,
       });
       console.log('Print successful');
       setIsSuccess(true);

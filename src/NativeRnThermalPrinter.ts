@@ -12,7 +12,7 @@ export type CommonPrintOptions = {
   codepage?: string; // e.g. 'CP437', 'CP1252'
   bold?: boolean;
   underline?: boolean;
-  printerWidthMM?: 58 | 80;
+  printerWidthMM?: number;
   charsPerLine?: number; // 32 for 58mm, 48 for 80mm
   payload: string; // plain text with markup (see README)
 };
