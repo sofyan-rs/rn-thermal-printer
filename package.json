@@ -1,0 +1,32 @@
+{
+  "name": "@sofyan-rs/rn-thermal-printer",
+  "version": "1.0.0",
+  "description": "Android React Native Bluetooth Classic thermal printer with a persistent RFCOMM pool",
+  "author": "Sofyan RS",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sofyan-rs/rn-thermal-printer.git"
+  },
+  "homepage": "https://github.com/sofyan-rs/rn-thermal-printer#readme",
+  "bugs": {
+    "url": "https://github.com/sofyan-rs/rn-thermal-printer/issues"
+  },
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "files": ["src", "android", "README.md", "LICENSE", "package.json"],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-native": ">=0.72"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "react-native": "^0.76.0"
+  },
+  "keywords": ["react-native", "android", "bluetooth", "rfcomm", "thermal-printer", "pos"]
+}

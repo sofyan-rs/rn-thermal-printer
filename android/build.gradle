@@ -1,0 +1,16 @@
+buildscript {
+  repositories { google(); mavenCentral(); }
+  dependencies { classpath("com.android.tools.build:gradle:8.5.2") }
+}
+
+apply plugin: "com.android.library"
+
+android {
+  namespace "com.sofyan.thermalprinter"
+  compileSdkVersion 35
+  defaultConfig { minSdkVersion 23 }
+}
+
+repositories { google(); mavenCentral(); }
+
+dependencies { implementation("com.facebook.react:react-android") }
